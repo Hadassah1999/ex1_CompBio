@@ -7,13 +7,48 @@ GRID_SIZE = 100
 
 PROB_ALIVE = 0.5
 
+def change_block(grid, i, j): 
+    b1 = grid[i][j]
+    b2 = grid[i + 1][j]
+    b3 = grid[i][j + 1]
+    b4 = grid[i + 1][j + 1]
+    black = b1 + b2 + b3 + b4
+    if(black == 3):
+        b1 = 1 - b1
+        b2 = 1 - b2
+        b3 = 1- b3
+        b4 = 1 - b4
+        grid[i][j] = b4
+        grid[i + 1][j] = b3
+        grid[i][j + 1] = b2
+        grid[i + 1][j + 1] = b1
+
+
+
+
+def red_step_no_wrap(grid):
+    ##initialize red
+    for i in range(1, len(grid), 2):
+        for j in range(1, len(grid), 2):
+            change_block(grid, i, j)
+           
+
+
+
+
+def blue_step_no_wrap(grid):
+     ##initialize red
+    for i in range(0, len(grid), 2):
+        for j in range(0, len(grid), 2):
+            change_block(grid, i, j)
+           
+
+
 def initialize_grid(size, prob_alive=0.5):
     return [
         [1 if random.random() < prob_alive else 0 for _ in range(size)]
         for _ in range(size)
     ]
-
-
     
 def draw_grid(canvas, grid, cell_size):
     canvas.delete("all")
@@ -41,12 +76,30 @@ def main():
     canvas_width = cell_size * GRID_SIZE
     canvas_height = cell_size * GRID_SIZE
     
-    root.geometry(f"{canvas_width}x{canvas_height}")
+    root.geometry(f"{canvas_width + 200}x{canvas_height}")
 
+    ## Creating the toolbar
+    toolbar = tk.Frame(root, width=200, bg="lightgray")
+    toolbar.pack(side="left", fill="y")
+
+    play_button = tk.Button(toolbar, text="Play", command=None)  
+    play_button.pack(pady=10)
+
+    step_label = tk.Label(toolbar, text=f"Step:", font=("Arial", 12))
+    step_label.pack(pady=10)
+
+    next_button = tk.Button(toolbar, text="Next", command=None)  
+    next_button.pack(pady=10)
+
+    back_button = tk.Button(toolbar, text="Back", command=None)  
+    back_button.pack(pady=10)
+
+
+
+    ## The canvas for the grid
     canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg="white")
-    canvas.pack()
+    canvas.pack(side="right", fill="both", expand=True)
 
-    grid = initialize_grid(GRID_SIZE, PROB_ALIVE)
     draw_grid(canvas, grid, cell_size)
 
     root.mainloop()
