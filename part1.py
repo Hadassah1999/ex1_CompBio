@@ -70,8 +70,9 @@ def main():
 
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
+    adj_height = int(screen_height * 0.9)
 
-    cell_size = min(screen_width // GRID_SIZE, screen_height // GRID_SIZE)
+    cell_size = min(screen_width // GRID_SIZE, adj_height // GRID_SIZE)
 
     canvas_width = cell_size * GRID_SIZE
     canvas_height = cell_size * GRID_SIZE
