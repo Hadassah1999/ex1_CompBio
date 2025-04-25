@@ -12,7 +12,7 @@ def play_to_end(grid, canvas, cell_size):
     for i in range(gen, 251):
         next_gen(grid, canvas, cell_size)
         canvas.update()
-        time.sleep(0.5)
+        time.sleep(0.05)
 
 
 def next_gen(grid, canvas, cell_size):
@@ -52,11 +52,15 @@ def change_block_f(grid, i, j):
         grid[i + 1][j] = b3
         grid[i][j + 1] = b2
         grid[i + 1][j + 1] = b1
-    if(black != 2):
+    if(black not in (2, 3)):
         b1 = 1 - b1
         b2 = 1 - b2
         b3 = 1- b3
         b4 = 1 - b4
+        grid[i][j] = b1
+        grid[i + 1][j] = b2
+        grid[i][j + 1] = b3
+        grid[i + 1][j + 1] = b4
 
 
 
@@ -64,8 +68,8 @@ def change_block_f(grid, i, j):
 
 def red_step_no_wrap(grid):
     ##initialize red
-    for i in range(1, len(grid), 2):
-        for j in range(1, len(grid), 2):
+    for i in range(1, len(grid) -1, 2):
+        for j in range(1, len(grid[0]) - 1, 2):
             change_block_f(grid, i, j)
            
 
@@ -74,8 +78,8 @@ def red_step_no_wrap(grid):
 
 def blue_step_no_wrap(grid):
      ##initialize red
-    for i in range(0, len(grid), 2):
-        for j in range(0, len(grid), 2):
+    for i in range(0, len(grid) -1, 2):
+        for j in range(0, len(grid[0]) - 1, 2):
             change_block_f(grid, i, j)
            
 
