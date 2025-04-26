@@ -6,10 +6,14 @@ import time
 GRID_SIZE = 100
 PROB_ALIVE = 0.5
 MAX_GEN = 250
+wrap = 'no'
 root = tk.Tk()
 gen = tk.IntVar(value=1)
 play_pause_btn_text = tk.StringVar(value="Play")
 continue_playing = False
+selected_wrap = tk.StringVar(value='no')
+selected_prob = tk.DoubleVar(value=0.5)
+selected_glider = tk.BooleanVar(value=False)
 
 def play_pause(grid, canvas, cell_size):
     global continue_playing
@@ -29,26 +33,29 @@ def play_to_end(grid, canvas, cell_size):
         next_gen(grid, canvas, cell_size)
         canvas.update()
 
-        canvas.after(50, play_to_end, grid, canvas, cell_size)  # Run again after 50 ms
+        canvas.after(50, play_to_end, grid, canvas, cell_size) 
 
 
 def next_gen(grid, canvas, cell_size):
-    global gen
+    global gen, wrap
+    wrap = selected_wrap.get()
+
     if gen.get() % 2 == 1:
-        blue_step_no_wrap(grid)
+        blue_step(grid)
     else:
-        red_step_no_wrap(grid)
+        red_step(grid, wrap)
     draw_grid(canvas, grid, cell_size)
     gen.set(gen.get() + 1)
 
 def back_gen(grid, canvas, cell_size):
-    global gen
+    global gen, wrap
+    wrap = selected_wrap.get()
     if gen.get() > 1:
         gen.set(gen.get() - 1)
-        if gen % 2 == 0:
-            blue_step_no_wrap(grid)
+        if gen.get() % 2 == 1:
+            blue_step(grid)
         else:
-            red_step_no_wrap(grid)
+            red_step(grid, wrap)
         draw_grid(canvas, grid, cell_size)
 
 
@@ -76,26 +83,130 @@ def change_block_f(grid, i, j):
             grid[i][j + 1] = b3
             grid[i + 1][j + 1] = b4
 
+def change_block_f_wrap(grid, i, j):
+    N = len(grid)
+    M = len(grid[0])
 
-def red_step_no_wrap(grid):
-    #initialize red
-    for i in range(1, len(grid) -1, 2):
-        for j in range(1, len(grid[0]) - 1, 2):
-            change_block_f(grid, i, j)
+    i1 = i % N
+    i2 = (i + 1) % N
+    j1 = j % M
+    j2 = (j + 1) % M
+
+    b1 = grid[i1][j1]
+    b2 = grid[i2][j1]
+    b3 = grid[i1][j2]
+    b4 = grid[i2][j2]
+    black = b1 + b2 + b3 + b4
+
+    if black != 2:
+        b1 = 1 - b1
+        b2 = 1 - b2
+        b3 = 1 - b3
+        b4 = 1 - b4
+
+        if black == 3:
+            grid[i1][j1] = b4
+            grid[i2][j1] = b3
+            grid[i1][j2] = b2
+            grid[i2][j2] = b1
+        else:
+            grid[i1][j1] = b1
+            grid[i2][j1] = b2
+            grid[i1][j2] = b3
+            grid[i2][j2] = b4
 
 
-def blue_step_no_wrap(grid):
-     #initialize red
+def red_step(grid, wrap):
+    if wrap == 'no':
+        for i in range(1, len(grid) -1, 2):
+          for j in range(1, len(grid[0]) - 1, 2):
+                change_block_f(grid, i, j)
+    if wrap == 'yes':
+        for i in range(1, len(grid), 2):
+          for j in range(1, len(grid[0]), 2):
+                change_block_f_wrap(grid, i, j)
+        
+
+
+
+def blue_step(grid):
+     
     for i in range(0, len(grid) -1, 2):
         for j in range(0, len(grid[0]) - 1, 2):
             change_block_f(grid, i, j)
 
 
-def initialize_grid(size, prob_alive=0.5):
+def initialize_grid(size):
+    global PROB_ALIVE
+    PROB_ALIVE = selected_prob.get()
+
     return [
-        [1 if random.random() < prob_alive else 0 for _ in range(size)]
+        [1 if random.random() < PROB_ALIVE else 0 for _ in range(size)]
         for _ in range(size)
     ]
+
+def initialize_spiral_grid(size):
+    grid = [[1 for _ in range(size)] for _ in range(size)]
+
+    left_b = 1
+    right_b = size - 2
+    top_l = 1
+    bottom_l = size - 2
+
+    
+    for i in range(left_b, right_b + 1):
+        grid[top_l][i] = 0
+        grid[bottom_l][i] = 0
+
+    for i in range(top_l, bottom_l + 1):
+        grid[i][left_b] = 0
+        grid[i][right_b] = 0
+
+
+    return grid
+
+def initialize_spaced_spiral_grid(size):
+    grid = [[0 for _ in range(size)] for _ in range(size)]
+
+    left_b = 0
+    right_b = size - 1
+    top_l = 0
+    bottom_l = size - 1
+
+    while (left_b < right_b) and (top_l < bottom_l):
+        for i in range(left_b, right_b + 1):
+            grid[top_l][i] = 1
+            grid[bottom_l][i] = 1
+
+        for i in range(top_l, bottom_l + 1):
+            grid[i][left_b] = 1
+            grid[i][right_b] = 1
+
+        top_l += 2
+        bottom_l -= 2
+        left_b += 2
+        right_b -= 2
+
+    return grid
+
+def initialize_glider_grid(grid_size):
+    grid = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
+    
+    # Glider pattern (4x4)
+    pattern = [
+        [0, 1, 1, 0],
+        [1, 0, 0, 1],
+        [0, 1, 1, 0],
+        [0, 0, 0, 0]
+    ]
+    
+    offset = grid_size // 2 - 2  # Center the pattern
+    
+    for i in range(4):
+        for j in range(4):
+            grid[offset + i][offset + j] = pattern[i][j]
+    
+    return grid
 
 
 def draw_grid(canvas, grid, cell_size):
@@ -109,6 +220,81 @@ def draw_grid(canvas, grid, cell_size):
             color = "black" if grid[i][j] == 1 else "white"
             canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="gray")
 
+def start_simulation(grid, menu_frame):
+    menu_frame.destroy() 
+    initialize_gui(grid) 
+
+def return_to_menu(root):
+    global gen
+    gen.set(1)
+    for widget in root.winfo_children():
+        widget.destroy()  
+    start_menu()
+
+def start_menu():
+    global PROB_ALIVE
+
+    root.title("Cellular Automaton - Menu")
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    adj_height = int(screen_height * 0.9)
+    cell_size = min(screen_width // GRID_SIZE, adj_height // GRID_SIZE)
+    canvas_width = cell_size * GRID_SIZE
+    canvas_height = cell_size * GRID_SIZE
+    total_width = canvas_width + 200
+    root.geometry(f"{total_width}x{canvas_height}")
+
+
+    menu_frame = tk.Frame(root, bg="#9BCD9B", bd=2, relief="ridge")
+    menu_frame.pack(fill="both", expand=True)
+
+    title = tk.Label(menu_frame, text="Welcome to Cellular Automaton!", font=("Arial", 20, "bold"), bg="#9BCD9B")
+    title.pack(pady=30)
+
+
+    settings_frame = tk.Frame(menu_frame, bg="#9BCD9B")
+    settings_frame.pack(pady=10)
+
+
+    wrap_label = tk.Label(settings_frame, text="Wrap Around:", font=("Arial", 14), bg="#9BCD9B")
+    wrap_label.grid(row=0, column=0, sticky="w", padx=10, pady=5)
+
+    wrap_menu = tk.OptionMenu(settings_frame, selected_wrap, 'yes', 'no')
+    wrap_menu.config(font=("Arial", 12), width=10)
+    wrap_menu.grid(row=0, column=1, padx=10, pady=5)
+
+
+    prob_label = tk.Label(settings_frame, text="Initial Probability:", font=("Arial", 14), bg="#9BCD9B")
+    prob_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
+
+    prob_menu = tk.OptionMenu(settings_frame, selected_prob, '0.25', '0.5', '0.75')
+    prob_menu.config(font=("Arial", 12), width=10)
+    prob_menu.grid(row=1, column=1, padx=10, pady=5)
+
+    start_btn = tk.Button(menu_frame, text="Start Simulation", font=("Arial", 14, "bold"), bg="#008B00", fg="white",
+                          width=20, command=lambda: start_simulation(initialize_grid(GRID_SIZE), menu_frame))
+    start_btn.pack(pady=10)
+
+    title2 = tk.Label(menu_frame, text="Special run options:", font=("Arial", 18, "bold"), bg="#9BCD9B")
+    title2.pack(pady=20)
+
+    glider_check = tk.Button(menu_frame, text="Start Glider Simulator", font=("Arial", 14), 
+                             command=lambda: start_simulation(initialize_glider_grid(GRID_SIZE), menu_frame))
+    glider_check.pack(pady=20)
+
+    start_special_btn = tk.Button(menu_frame, text="Start First Special Simulation",
+                      font=("Arial", 14), command=lambda: start_simulation(initialize_spiral_grid(GRID_SIZE), menu_frame))
+    start_special_btn.pack(pady=10)
+
+    start_special2_btn = tk.Button(menu_frame, text="Start Second Special Simulation",
+                      font=("Arial", 14),
+                      command=lambda: start_simulation(initialize_spaced_spiral_grid(GRID_SIZE), menu_frame))
+    start_special2_btn.pack(pady=10)
+
+
+    exit_btn = tk.Button(menu_frame, text="Exit", font=("Arial", 14, "bold"), bg="#CD5555", fg="white", width=20,
+                         command=root.quit)
+    exit_btn.pack(pady=5)
 
 def initialize_gui(grid):
     root.title("Cellular Automaton")
@@ -124,28 +310,52 @@ def initialize_gui(grid):
 
     root.geometry(f"{canvas_width + 200}x{canvas_height}")
 
-    # Creating the toolbar
-    toolbar = tk.Frame(root, width=200, bg="lightgray")
+    toolbar = tk.Frame(root, width=200, bg="#87CEEB") 
     toolbar.pack(side="left", fill="y")
 
+    button_style = {
+        "font": ("Arial", 12),
+        "width": 16,
+        "bg": "#ffffff",
+        "relief": "raised",
+        "bd": 2
+    }
+
     play_button = tk.Button(toolbar, textvariable=play_pause_btn_text,
-                            command=lambda: play_pause(grid, canvas, cell_size))
-    play_button.pack(pady=10)
+                            command=lambda: play_pause(grid, canvas, cell_size),
+                            **button_style)
+    play_button.pack(pady=(20, 10))
 
-    step_title_label = tk.Label(toolbar, text=f"Step:", font=("Arial", 12))
-    step_title_label.pack(pady=10)
 
-    step_no_label = tk.Label(toolbar, textvariable=gen, font=("Arial", 12))
-    step_no_label.pack(pady=10)
+    step_title_label = tk.Label(toolbar, text="Step:", font=("Arial", 12, "bold"), bg="#87CEEB")
+    step_title_label.pack(pady=(10, 0))
 
-    next_button = tk.Button(toolbar, text="Next", command=lambda: next_gen(grid, canvas, cell_size))
-    next_button.pack(pady=10)
+    step_no_label = tk.Label(toolbar, textvariable=gen, font=("Arial", 12), bg="#87CEEB")
+    step_no_label.pack(pady=(0, 10))
 
-    back_button = tk.Button(toolbar, text="Back", command=lambda: back_gen(grid, canvas, cell_size))
-    back_button.pack(pady=10)
 
-    # The canvas for the grid
-    canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg="white")
+    next_button = tk.Button(toolbar, text="Next",
+                            command=lambda: next_gen(grid, canvas, cell_size),
+                            **button_style)
+    next_button.pack(pady=8)
+
+
+    back_button = tk.Button(toolbar, text="Back",
+                            command=lambda: back_gen(grid, canvas, cell_size),
+                            **button_style)
+    back_button.pack(pady=8)
+
+    separator = tk.Frame(toolbar, height=2, bd=1, relief="sunken", bg="#ccc")
+    separator.pack(fill="x", padx=5, pady=12)
+
+
+    menu_button = tk.Button(toolbar, text="Menu",
+                            command=lambda: return_to_menu(root),
+                            **button_style)
+    menu_button.pack(pady=10)
+
+
+    canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg="#87CEEB")
     canvas.pack(side="right", fill="both", expand=True)
 
     draw_grid(canvas, grid, cell_size)
@@ -154,9 +364,8 @@ def initialize_gui(grid):
 
 
 def main():
-    grid = initialize_grid(GRID_SIZE, PROB_ALIVE)
-    initialize_gui(grid)
-
+    start_menu()
+    root.mainloop()
 
 if __name__ == "__main__":
     main()
