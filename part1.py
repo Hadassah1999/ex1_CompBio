@@ -9,7 +9,7 @@ MAX_GEN = 250
 wrap = 'no'
 root = tk.Tk()
 gen = tk.IntVar(value=1)
-play_pause_btn_text = tk.StringVar(value="Play")
+play_pause_btn_text = tk.StringVar(value="Play 🎵")
 continue_playing = False
 selected_wrap = tk.StringVar(value='no')
 selected_prob = tk.DoubleVar(value=0.5)
@@ -17,13 +17,13 @@ selected_glider = tk.BooleanVar(value=False)
 
 def play_pause(grid, canvas, cell_size):
     global continue_playing
-    if play_pause_btn_text.get() == "Play":
-        play_pause_btn_text.set("Pause")
+    if play_pause_btn_text.get() == "Play 🎵":
+        play_pause_btn_text.set("Pause ⏸️")
         continue_playing = True;
         play_to_end(grid, canvas, cell_size)
     else:
         continue_playing = False;
-        play_pause_btn_text.set("Play")
+        play_pause_btn_text.set("Play 🎵")
 
 
 def play_to_end(grid, canvas, cell_size):
@@ -334,13 +334,13 @@ def initialize_gui(grid):
     step_no_label.pack(pady=(0, 10))
 
 
-    next_button = tk.Button(toolbar, text="Next",
+    next_button = tk.Button(toolbar, text="Next ⏭️",
                             command=lambda: next_gen(grid, canvas, cell_size),
                             **button_style)
     next_button.pack(pady=8)
 
 
-    back_button = tk.Button(toolbar, text="Back",
+    back_button = tk.Button(toolbar, text="Back ⏮️",
                             command=lambda: back_gen(grid, canvas, cell_size),
                             **button_style)
     back_button.pack(pady=8)
@@ -349,7 +349,7 @@ def initialize_gui(grid):
     separator.pack(fill="x", padx=5, pady=12)
 
 
-    menu_button = tk.Button(toolbar, text="Menu",
+    menu_button = tk.Button(toolbar, text="Menu 🏠",
                             command=lambda: return_to_menu(root),
                             **button_style)
     menu_button.pack(pady=10)
