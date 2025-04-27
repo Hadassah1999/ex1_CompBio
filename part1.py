@@ -29,12 +29,14 @@ def play_pause(grid, canvas, cell_size):
 def play_to_end(grid, canvas, cell_size):
     global continue_playing
     global gen
-    if continue_playing and gen.get() < MAX_GEN:
-        next_gen(grid, canvas, cell_size)
-        canvas.update()
-
-        canvas.after(5, play_to_end, grid, canvas, cell_size)
-
+    if gen.get() < MAX_GEN:
+        if continue_playing:
+            next_gen(grid, canvas, cell_size)
+            canvas.update()
+            canvas.after(5, play_to_end, grid, canvas, cell_size)
+    else:
+        continue_playing = False
+        play_pause_btn_text.set("Play 🎵")
 
 def next_gen(grid, canvas, cell_size):
     global gen, wrap
