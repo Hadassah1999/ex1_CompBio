@@ -3,19 +3,26 @@ import random
 import time
 
 
-GRID_SIZE = 100
-PROB_ALIVE = 0.5
-MAX_GEN = 250
-wrap = 'no'
-root = tk.Tk()
-gen = tk.IntVar(value=1)
-play_pause_btn_text = tk.StringVar(value="Play 🎵")
-continue_playing = False
+GRID_SIZE = 100 # The number of cells in each row/column
+PROB_ALIVE = 0.5 # The probability that a square in the grid would receive the "alive" (1) score
+MAX_GEN = 250 # The maximum number of generations that would be shown when clicking "play"
+wrap = 'no' # Will be "yes" when wraparound will be enabled
+root = tk.Tk() # The base object of the GUI
+gen = tk.IntVar(value=1) # The current generation number
+
+play_pause_btn_text = tk.StringVar(value="Play 🎵") # The text currently displayed on the play/pause button
+continue_playing = False # Will be "true" when the animation should be played
 selected_wrap = tk.StringVar(value='no')
 selected_prob = tk.DoubleVar(value=0.5)
 selected_glider = tk.BooleanVar(value=False)
 
 def play_pause(grid, canvas, cell_size):
+    """
+    Responsible to start / stop the animation and change the play/pause button's text accordingly
+    :param grid: A two-dimensional array representing the values in the grid
+    :param canvas: The GUI "canvas" object the grid is drawn on
+    :param cell_size: The number of cels in each row/column of the grid
+    """
     global continue_playing
     if play_pause_btn_text.get() == "Play 🎵":
         play_pause_btn_text.set("Pause ⏸️")
@@ -27,30 +34,53 @@ def play_pause(grid, canvas, cell_size):
 
 
 def play_to_end(grid, canvas, cell_size):
+    """
+    Plays the animation forward while the current generation did not reach 250 and while the user has not
+    requested the animation to be paused
+    :param grid: A two-dimensional array representing the values in the grid
+    :param canvas: The GUI "canvas" object the grid is drawn on
+    :param cell_size: The number of cels in each row/column of the grid
+    :return:
+    """
     global continue_playing
     global gen
     if gen.get() < MAX_GEN:
         if continue_playing:
             next_gen(grid, canvas, cell_size)
             canvas.update()
-            canvas.after(5, play_to_end, grid, canvas, cell_size)
+            canvas.after(100, play_to_end, grid, canvas, cell_size)
+            # Causes the next iteration of the canvas update to be called
     else:
         continue_playing = False
         play_pause_btn_text.set("Play 🎵")
 
 def next_gen(grid, canvas, cell_size):
+    """
+    Moves the grid a generation forward. Carries out a "blue step" or a "red step" according to the number
+    of the current generation
+    :param grid: A two-dimensional array representing the values in the grid
+    :param canvas: The GUI "canvas" object the grid is drawn on
+    :param cell_size: The number of cels in each row/column of the grid
+    """
     global gen, wrap
     wrap = selected_wrap.get()
 
     if gen.get() % 2 == 1:
         blue_step(grid)
     else:
-        red_step(grid, wrap)
+        red_step(grid)
     draw_grid(canvas, grid, cell_size)
     gen.set(gen.get() + 1)
 
 
 def back_gen(grid, canvas, cell_size):
+    """
+    Moves the grid a generation *backward*. Cancels the effects of the previous "blue step" or a "red step" according
+    to the number of the current generation.
+    :param grid: A two-dimensional array representing the values in the grid
+    :param canvas: The GUI "canvas" object the grid is drawn on
+    :param cell_size: The number of cels in each row/column of the grid
+    """
     global gen, wrap
     wrap = selected_wrap.get()
     if gen.get() > 1:
@@ -58,35 +88,56 @@ def back_gen(grid, canvas, cell_size):
         if gen.get() % 2 == 1:
             blue_step_b(grid)
         else:
-            red_step_b(grid, wrap)
+            red_step_b(grid)
         draw_grid(canvas, grid, cell_size)
 
-def get_b_values(grid, i, j):
-    if wrap == 'yes':
-        fixed_i_plus_one = i + 1
-        fixed_j_plus_one = j + 1
+def get_fixed_indices(i, j):
+    """
+    Returns the corrected coordinates for the block's cells in case the cell participates in a wraparound.
+    :param i: row index of the upper-left cell
+    :param j: column index of the upper-left cell
+    :return: Fixed indices for the second "row" (fixed_i_plus_one) and second "column" (fixed_j_plus_one)
+    of the block
+    """
+    fixed_i_plus_one = i + 1
+    fixed_j_plus_one = j + 1
 
+    if wrap == 'yes':
         if (i + 1) == GRID_SIZE:
             fixed_i_plus_one = 0
 
         if (j + 1) == GRID_SIZE:
             fixed_j_plus_one = 0
 
-        b1 = grid[i][j]
-        b2 = grid[fixed_i_plus_one][j]
-        b3 = grid[i][fixed_j_plus_one]
-        b4 = grid[fixed_i_plus_one][fixed_j_plus_one]
+    return fixed_i_plus_one, fixed_j_plus_one
 
-    else:
-        b1 = grid[i][j]
-        b2 = grid[i + 1][j]
-        b3 = grid[i][j + 1]
-        b4 = grid[i + 1][j + 1]
+def get_b_values(grid, i, j):
+    """
+    Gets the row (i) and column (j) indices of all the squares in a block, according to the i and j
+    of the upper-left cell. Works differently if wraparound is enabled.
+    :param grid: A two-dimensional array representing the values in the grid
+    :param i: row index of the upper-left cell
+    :param j: column index of the upper-left cell
+    :return: the inner value (1, 0) of each of the block's cells
+    """
+    fixed_i_plus_one, fixed_j_plus_one = get_fixed_indices(i, j)
+
+    b1 = grid[i][j]
+    b2 = grid[fixed_i_plus_one][j]
+    b3 = grid[i][fixed_j_plus_one]
+    b4 = grid[fixed_i_plus_one][fixed_j_plus_one]
+
     return b1, b2, b3, b4
 
-
 def change_block_f(grid, i, j):
+    """
+    Changes the values of the four squares within a specified "block" in order to go a generation *forward*.
+    :param grid: A two-dimensional array representing the values in the grid
+    :param i: The row index of the upper-left square of the grid
+    :param j: The column index of the upper-left square of the grid
+    """
     b1, b2, b3, b4 = get_b_values(grid, i, j)
+    fixed_i_plus_one, fixed_j_plus_one = get_fixed_indices(i, j)
     black = b1 + b2 + b3 + b4
 
     if black != 2:
@@ -97,18 +148,27 @@ def change_block_f(grid, i, j):
 
         if black == 3:
             grid[i][j] = b4
-            grid[i + 1][j] = b3
-            grid[i][j + 1] = b2
-            grid[i + 1][j + 1] = b1
-        else:
+            grid[fixed_i_plus_one][j] = b3
+            grid[i][fixed_j_plus_one] = b2
+            grid[fixed_i_plus_one][fixed_j_plus_one] = b1
+
+        elif black in (0, 1, 4):
             grid[i][j] = b1
-            grid[i + 1][j] = b2
-            grid[i][j + 1] = b3
-            grid[i + 1][j + 1] = b4
+            grid[fixed_i_plus_one][j] = b2
+            grid[i][fixed_j_plus_one] = b3
+            grid[fixed_i_plus_one][fixed_j_plus_one] = b4
 
 
 def change_block_b(grid, i, j):
+    """
+    Changes the values of the four squares within a specified "block" in order to go a generation *backwards*.
+    :param grid: A two-dimensional array representing the values in the grid
+    :param i: The row index of the upper-left square of the grid
+    :param j: The column index of the upper-left square of the grid
+    :return: Nothing, this is a void function
+    """
     b1, b2, b3, b4 = get_b_values(grid, i, j)
+    fixed_i_plus_one, fixed_j_plus_one = get_fixed_indices(i, j)
     black = b1 + b2 + b3 + b4
 
     if black != 2:
@@ -119,41 +179,57 @@ def change_block_b(grid, i, j):
 
         if black == 1:
             grid[i][j] = b4
-            grid[i + 1][j] = b3
-            grid[i][j + 1] = b2
-            grid[i + 1][j + 1] = b1
-        else:
+            grid[fixed_i_plus_one][j] = b3
+            grid[i][fixed_j_plus_one] = b2
+            grid[fixed_i_plus_one][fixed_j_plus_one] = b1
+        elif black in (0, 3, 4):
             grid[i][j] = b1
-            grid[i + 1][j] = b2
-            grid[i][j + 1] = b3
-            grid[i + 1][j + 1] = b4
+            grid[fixed_i_plus_one][j] = b2
+            grid[i][fixed_j_plus_one] = b3
+            grid[fixed_i_plus_one][fixed_j_plus_one] = b4
 
 
-def red_step(grid, wrap):
+def red_step(grid):
+    """
+    Forwards the grid data with a "red step" (a generational change based on blocks specified by the "red" lines)
+    """
     for i in range(1, len(grid) -1, 2):
         for j in range(1, len(grid[0]) - 1, 2):
             change_block_f(grid, i, j)
 
 
-def red_step_b(grid, wrap):
+def red_step_b(grid):
+    """
+    "Cancels" the effect of a "red step"
+    """
     for i in range(1, len(grid) -1, 2):
         for j in range(1, len(grid[0]) - 1, 2):
             change_block_b(grid, i, j)
 
 
 def blue_step(grid):
-    for i in range(0, len(grid) -1, 2):
-        for j in range(0, len(grid[0]) - 1, 2):
+    """
+    Forwards the grid data with a "blue step" (a generational change based on blocks specified by the "blue" lines)
+    """
+    for i in range(0, GRID_SIZE, 2):
+        for j in range(0, GRID_SIZE, 2):
             change_block_f(grid, i, j)
 
 
 def blue_step_b(grid):
-    for i in range(0, len(grid) -1, 2):
-        for j in range(0, len(grid[0]) - 1, 2):
+    """
+    "Cancels" the effect of a "blue step"
+    """
+    for i in range(0, GRID_SIZE - 1, 2):
+        for j in range(0, GRID_SIZE - 1, 2):
             change_block_b(grid, i, j)
 
 
 def initialize_grid(size):
+    """
+    Initializes the "grid" array so the "0" and "1" values would be initialized as per the probability the user
+    chose for them in the menu screen
+    """
     global PROB_ALIVE
     PROB_ALIVE = selected_prob.get()
 
@@ -162,8 +238,14 @@ def initialize_grid(size):
         for _ in range(size)
     ]
 
+    return grid
+
 
 def initialize_spiral_grid(size):
+    """
+    Initializes the "grid" array so a "frame" would be created on screen.
+    As generations pass, a spiral shape would be created on screen.
+    """
     grid = [[1 for _ in range(size)] for _ in range(size)]
 
     left_b = 1
@@ -183,6 +265,10 @@ def initialize_spiral_grid(size):
 
 
 def initialize_spaced_spiral_grid(size):
+    """
+    Initializes the "grid" array so spaced "frames" would be created on screen.
+    As generations pass, a spiral shape would be created on screen.
+    """
     grid = [[0 for _ in range(size)] for _ in range(size)]
 
     left_b = 0
@@ -208,8 +294,12 @@ def initialize_spaced_spiral_grid(size):
 
 
 def initialize_glider_grid(grid_size):
+    """
+    Initializes the "grid" array so a glider object will be created
+    """
     grid = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
 
+    """
     # Glider pattern (4x4)
     pattern = [
         [0, 1, 1, 0],
@@ -217,17 +307,21 @@ def initialize_glider_grid(grid_size):
         [0, 1, 1, 0],
         [0, 0, 0, 0]
     ]
-
+    
     offset = grid_size // 2 - 2  # Center the pattern
 
     for i in range(4):
         for j in range(4):
             grid[offset + i][offset + j] = pattern[i][j]
+    """
 
     return grid
 
 
 def draw_grid(canvas, grid, cell_size):
+    """
+    Draws a grid object on the screen based on the "grid" two-dimensional array
+    """
     canvas.delete("all")
     for i in range(len(grid)):
         for j in range(len(grid[i])):
@@ -240,11 +334,19 @@ def draw_grid(canvas, grid, cell_size):
 
 
 def start_simulation(grid, menu_frame):
+    """
+    Gets the user to the grid screen. The grid is drawn (or re-drawn) according to the parameters
+    specified in the menu screen.
+    """
     menu_frame.destroy()
-    initialize_gui(grid)
+    initialize_main_screen(grid)
 
 
 def return_to_menu(root):
+    """
+    Returns the user to the menu screen from the grid screen. The current state of the grid is removed,
+    so when re-entering the grid screen, it will be re-initialized.
+    """
     global gen
     gen.set(1)
     for widget in root.winfo_children():
@@ -253,12 +355,15 @@ def return_to_menu(root):
 
 
 def start_menu():
+    """
+    Sets up the menu screen (in which the user chooses the parameters by which the grid would be initialized)
+    """
     global PROB_ALIVE
 
     root.title("Cellular Automaton - Menu")
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
-    adj_height = int(screen_height * 0.9)
+    adj_height = int(screen_height * 0.7)
     cell_size = min(screen_width // GRID_SIZE, adj_height // GRID_SIZE)
     canvas_width = cell_size * GRID_SIZE
     canvas_height = cell_size * GRID_SIZE
@@ -313,12 +418,17 @@ def start_menu():
     exit_btn.pack(pady=5)
 
 
-def initialize_gui(grid):
+def initialize_main_screen(grid):
+    """
+    Initializes the "grid" screen, which will display the current state of the grid and will enables the user
+    to see how it changes generation by generation
+    :param grid: A two-dimensional array representing the values in the grid
+    """
     root.title("Cellular Automaton")
 
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
-    adj_height = int(screen_height * 0.9)
+    adj_height = int(screen_height * 0.7)
 
     cell_size = min(screen_width // GRID_SIZE, adj_height // GRID_SIZE)
 
@@ -342,7 +452,6 @@ def initialize_gui(grid):
                             command=lambda: play_pause(grid, canvas, cell_size),
                             **button_style)
     play_button.pack(pady=(20, 10))
-
 
     step_title_label = tk.Label(toolbar, text="Step:", font=("Arial", 12, "bold"), bg="#87CEEB")
     step_title_label.pack(pady=(10, 0))
@@ -381,8 +490,12 @@ def initialize_gui(grid):
 
 
 def main():
+    """
+    Starts the program. The screen that will be displayed first would be the menu screen.
+    """
     start_menu()
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
