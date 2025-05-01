@@ -48,7 +48,7 @@ def play_to_end(grid, canvas, cell_size):
         if continue_playing:
             next_gen(grid, canvas, cell_size)
             canvas.update()
-            canvas.after(100, play_to_end, grid, canvas, cell_size)
+            canvas.after(20, play_to_end, grid, canvas, cell_size)
             # Causes the next iteration of the canvas update to be called
     else:
         continue_playing = False
@@ -91,53 +91,20 @@ def back_gen(grid, canvas, cell_size):
             red_step_b(grid)
         draw_grid(canvas, grid, cell_size)
 
-def get_fixed_indices(i, j):
-    """
-    Returns the corrected coordinates for the block's cells in case the cell participates in a wraparound.
-    :param i: row index of the upper-left cell
-    :param j: column index of the upper-left cell
-    :return: Fixed indices for the second "row" (fixed_i_plus_one) and second "column" (fixed_j_plus_one)
-    of the block
-    """
-    fixed_i_plus_one = i + 1
-    fixed_j_plus_one = j + 1
-
-    if wrap == 'yes':
-        if (i + 1) == GRID_SIZE:
-            fixed_i_plus_one = 0
-
-        if (j + 1) == GRID_SIZE:
-            fixed_j_plus_one = 0
-
-    return fixed_i_plus_one, fixed_j_plus_one
-
-def get_b_values(grid, i, j):
-    """
-    Gets the row (i) and column (j) indices of all the squares in a block, according to the i and j
-    of the upper-left cell. Works differently if wraparound is enabled.
-    :param grid: A two-dimensional array representing the values in the grid
-    :param i: row index of the upper-left cell
-    :param j: column index of the upper-left cell
-    :return: the inner value (1, 0) of each of the block's cells
-    """
-    fixed_i_plus_one, fixed_j_plus_one = get_fixed_indices(i, j)
-
-    b1 = grid[i][j]
-    b2 = grid[fixed_i_plus_one][j]
-    b3 = grid[i][fixed_j_plus_one]
-    b4 = grid[fixed_i_plus_one][fixed_j_plus_one]
-
-    return b1, b2, b3, b4
 
 def change_block_f(grid, i, j):
-    """
-    Changes the values of the four squares within a specified "block" in order to go a generation *forward*.
-    :param grid: A two-dimensional array representing the values in the grid
-    :param i: The row index of the upper-left square of the grid
-    :param j: The column index of the upper-left square of the grid
-    """
-    b1, b2, b3, b4 = get_b_values(grid, i, j)
-    fixed_i_plus_one, fixed_j_plus_one = get_fixed_indices(i, j)
+    N = len(grid)
+    M = len(grid[0])
+
+    i1 = i % N
+    i2 = (i + 1) % N
+    j1 = j % M
+    j2 = (j + 1) % M
+
+    b1 = grid[i1][j1]
+    b2 = grid[i2][j1]
+    b3 = grid[i1][j2]
+    b4 = grid[i2][j2]
     black = b1 + b2 + b3 + b4
 
     if black != 2:
@@ -147,16 +114,15 @@ def change_block_f(grid, i, j):
         b4 = 1 - b4
 
         if black == 3:
-            grid[i][j] = b4
-            grid[fixed_i_plus_one][j] = b3
-            grid[i][fixed_j_plus_one] = b2
-            grid[fixed_i_plus_one][fixed_j_plus_one] = b1
-
-        elif black in (0, 1, 4):
-            grid[i][j] = b1
-            grid[fixed_i_plus_one][j] = b2
-            grid[i][fixed_j_plus_one] = b3
-            grid[fixed_i_plus_one][fixed_j_plus_one] = b4
+            grid[i1][j1] = b4
+            grid[i2][j1] = b3
+            grid[i1][j2] = b2
+            grid[i2][j2] = b1
+        else:
+            grid[i1][j1] = b1
+            grid[i2][j1] = b2
+            grid[i1][j2] = b3
+            grid[i2][j2] = b4
 
 
 def change_block_b(grid, i, j):
@@ -167,8 +133,18 @@ def change_block_b(grid, i, j):
     :param j: The column index of the upper-left square of the grid
     :return: Nothing, this is a void function
     """
-    b1, b2, b3, b4 = get_b_values(grid, i, j)
-    fixed_i_plus_one, fixed_j_plus_one = get_fixed_indices(i, j)
+    N = len(grid)
+    M = len(grid[0])
+
+    i1 = i % N
+    i2 = (i + 1) % N
+    j1 = j % M
+    j2 = (j + 1) % M
+
+    b1 = grid[i1][j1]
+    b2 = grid[i2][j1]
+    b3 = grid[i1][j2]
+    b4 = grid[i2][j2]
     black = b1 + b2 + b3 + b4
 
     if black != 2:
@@ -193,18 +169,28 @@ def red_step(grid):
     """
     Forwards the grid data with a "red step" (a generational change based on blocks specified by the "red" lines)
     """
-    for i in range(1, len(grid) -1, 2):
-        for j in range(1, len(grid[0]) - 1, 2):
-            change_block_f(grid, i, j)
+    if wrap == 'no':
+        for i in range(1, len(grid) - 1, 2):
+            for j in range(1, len(grid) - 1, 2):
+                change_block_f(grid, i, j)
+    else:
+        for i in range(1, len(grid), 2):
+            for j in range(1, len(grid), 2):
+                change_block_f(grid, i, j)
 
 
 def red_step_b(grid):
     """
     "Cancels" the effect of a "red step"
     """
-    for i in range(1, len(grid) -1, 2):
-        for j in range(1, len(grid[0]) - 1, 2):
-            change_block_b(grid, i, j)
+    if wrap == 'no':
+        for i in range(1, len(grid) - 1, 2):
+            for j in range(1, len(grid) - 1, 2):
+                change_block_b(grid, i, j)
+    else:
+        for i in range(1, len(grid), 2):
+            for j in range(1, len(grid), 2):
+                change_block_b(grid, i, j)
 
 
 def blue_step(grid):
@@ -297,23 +283,31 @@ def initialize_glider_grid(grid_size):
     """
     Initializes the "grid" array so a glider object will be created
     """
+
+def initialize_glider_grid(grid_size):
     grid = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
 
-    """
-    # Glider pattern (4x4)
+    # Define the 4x4 "bow and arrow" shape
     pattern = [
-        [0, 1, 1, 0],
-        [1, 0, 0, 1],
-        [0, 1, 1, 0],
-        [0, 0, 0, 0]
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+        [0, 1, 0, 0]
     ]
-    
-    offset = grid_size // 2 - 2  # Center the pattern
 
-    for i in range(4):
-        for j in range(4):
-            grid[offset + i][offset + j] = pattern[i][j]
-    """
+    pattern_height = len(pattern)
+    pattern_width = len(pattern[0])
+    min_gap = 8  # Minimum horizontal gap between patterns
+
+    # Fixed vertical offset (starting row index)
+    offset_y = 1
+
+    # Iterate horizontally with gap
+    for offset_x in range(0, grid_size - pattern_width + 1, pattern_width + min_gap):
+        for i in range(pattern_height):
+            for j in range(pattern_width):
+                if offset_y + i < grid_size and offset_x + j < grid_size:
+                    grid[offset_y + i][offset_x + j] = pattern[i][j]
 
     return grid
 
