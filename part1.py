@@ -50,6 +50,39 @@ def next_gen(grid, canvas, cell_size):
     gen.set(gen.get() + 1)
 
 
+def change_block_f(grid, i, j):
+     N = len(grid)
+     M = len(grid[0])
+ 
+     i1 = i % N
+     i2 = (i + 1) % N
+     j1 = j % M
+     j2 = (j + 1) % M
+ 
+     b1 = grid[i1][j1]
+     b2 = grid[i2][j1]
+     b3 = grid[i1][j2]
+     b4 = grid[i2][j2]
+     black = b1 + b2 + b3 + b4
+ 
+     if black != 2:
+         b1 = 1 - b1
+         b2 = 1 - b2
+         b3 = 1 - b3
+         b4 = 1 - b4
+ 
+         if black == 3:
+             grid[i1][j1] = b4
+             grid[i2][j1] = b3
+             grid[i1][j2] = b2
+             grid[i2][j2] = b1
+         else:
+             grid[i1][j1] = b1
+             grid[i2][j1] = b2
+             grid[i1][j2] = b3
+             grid[i2][j2] = b4
+
+
 def back_gen(grid, canvas, cell_size):
     global gen, wrap
     wrap = selected_wrap.get()
@@ -85,28 +118,6 @@ def get_b_values(grid, i, j):
     return b1, b2, b3, b4
 
 
-def change_block_f(grid, i, j):
-    b1, b2, b3, b4 = get_b_values(grid, i, j)
-    black = b1 + b2 + b3 + b4
-
-    if black != 2:
-        b1 = 1 - b1
-        b2 = 1 - b2
-        b3 = 1 - b3
-        b4 = 1 - b4
-
-        if black == 3:
-            grid[i][j] = b4
-            grid[i + 1][j] = b3
-            grid[i][j + 1] = b2
-            grid[i + 1][j + 1] = b1
-        else:
-            grid[i][j] = b1
-            grid[i + 1][j] = b2
-            grid[i][j + 1] = b3
-            grid[i + 1][j + 1] = b4
-
-
 def change_block_b(grid, i, j):
     b1, b2, b3, b4 = get_b_values(grid, i, j)
     black = b1 + b2 + b3 + b4
@@ -130,9 +141,14 @@ def change_block_b(grid, i, j):
 
 
 def red_step(grid, wrap):
-    for i in range(1, len(grid) -1, 2):
-        for j in range(1, len(grid[0]) - 1, 2):
-            change_block_f(grid, i, j)
+    if wrap == 'no':
+        for i in range(1, len(grid) -1, 2):
+            for j in range(1, len(grid[0]) - 1, 2):
+                change_block_f(grid, i, j)  
+    else: 
+        for i in range(1, len(grid), 2):
+            for j in range(1, len(grid[0]), 2):
+                change_block_f(grid, i, j)
 
 
 def red_step_b(grid, wrap):
@@ -210,19 +226,27 @@ def initialize_spaced_spiral_grid(size):
 def initialize_glider_grid(grid_size):
     grid = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
 
-    # Glider pattern (4x4)
+    # Define the 4x4 "bow and arrow" shape
     pattern = [
-        [0, 1, 1, 0],
-        [1, 0, 0, 1],
-        [0, 1, 1, 0],
-        [0, 0, 0, 0]
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+        [0, 1, 0, 0]
     ]
 
-    offset = grid_size // 2 - 2  # Center the pattern
+    pattern_height = len(pattern)
+    pattern_width = len(pattern[0])
+    min_gap = 8  # Minimum horizontal gap between patterns
 
-    for i in range(4):
-        for j in range(4):
-            grid[offset + i][offset + j] = pattern[i][j]
+    # Fixed vertical offset (starting row index)
+    offset_y = 1
+
+    # Iterate horizontally with gap
+    for offset_x in range(0, grid_size - pattern_width + 1, pattern_width + min_gap):
+        for i in range(pattern_height):
+            for j in range(pattern_width):
+                if offset_y + i < grid_size and offset_x + j < grid_size:
+                    grid[offset_y + i][offset_x + j] = pattern[i][j]
 
     return grid
 
@@ -376,8 +400,6 @@ def initialize_gui(grid):
     canvas.pack(side="right", fill="both", expand=True)
 
     draw_grid(canvas, grid, cell_size)
-
-    root.mainloop()
 
 
 def main():
