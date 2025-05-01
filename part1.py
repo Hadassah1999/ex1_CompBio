@@ -1,3 +1,4 @@
+import copy
 import tkinter as tk
 import random
 import time
@@ -9,12 +10,15 @@ MAX_GEN = 250 # The maximum number of generations that would be shown when click
 wrap = 'no' # Will be "yes" when wraparound will be enabled
 root = tk.Tk() # The base object of the GUI
 gen = tk.IntVar(value=1) # The current generation number
+eq = tk.IntVar(value=1) # The percentage of black squares in the grid
 
 play_pause_btn_text = tk.StringVar(value="Play 🎵") # The text currently displayed on the play/pause button
 continue_playing = False # Will be "true" when the animation should be played
 selected_wrap = tk.StringVar(value='no')
 selected_prob = tk.DoubleVar(value=0.5)
 selected_glider = tk.BooleanVar(value=False)
+randomized = False
+
 
 def play_pause(grid, canvas, cell_size):
     """
@@ -54,6 +58,22 @@ def play_to_end(grid, canvas, cell_size):
         continue_playing = False
         play_pause_btn_text.set("Play 🎵")
 
+
+def update_eq(grid):
+    total = len(grid) * len(grid)
+    black = 0
+    white = 0
+
+    for i in range(len(grid)):
+        for j in range(len(grid)):
+            if grid[i][j] == 1:
+                black += 1
+            else:
+                white += 1
+    black_double = black / total
+    eq.set(str(round(black_double, 3)))
+
+
 def next_gen(grid, canvas, cell_size):
     """
     Moves the grid a generation forward. Carries out a "blue step" or a "red step" according to the number
@@ -69,8 +89,10 @@ def next_gen(grid, canvas, cell_size):
         blue_step(grid)
     else:
         red_step(grid)
+        update_eq(grid)
     draw_grid(canvas, grid, cell_size)
     gen.set(gen.get() + 1)
+
 
 
 def back_gen(grid, canvas, cell_size):
@@ -211,20 +233,21 @@ def blue_step_b(grid):
             change_block_b(grid, i, j)
 
 
-def initialize_grid(size):
+def initialize_randomized_grid(size):
     """
-    Initializes the "grid" array so the "0" and "1" values would be initialized as per the probability the user
-    chose for them in the menu screen
+    Randomly initializes the "grid" array. The "0" and "1" values would be put into the grid according
+    to the probability chosen by the user
     """
+
+    global randomized
     global PROB_ALIVE
     PROB_ALIVE = selected_prob.get()
 
+    randomized = True
     return [
         [1 if random.random() < PROB_ALIVE else 0 for _ in range(size)]
         for _ in range(size)
     ]
-
-    return grid
 
 
 def initialize_spiral_grid(size):
@@ -278,11 +301,6 @@ def initialize_spaced_spiral_grid(size):
 
     return grid
 
-
-def initialize_glider_grid(grid_size):
-    """
-    Initializes the "grid" array so a glider object will be created
-    """
 
 def initialize_glider_grid(grid_size):
     grid = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
@@ -388,7 +406,7 @@ def start_menu():
     prob_menu.grid(row=1, column=1, padx=10, pady=5)
 
     start_btn = tk.Button(menu_frame, text="Start Simulation", font=("Arial", 14, "bold"), bg="#008B00", fg="white",
-                          width=20, command=lambda: start_simulation(initialize_grid(GRID_SIZE), menu_frame))
+                          width=20, command=lambda: start_simulation(initialize_randomized_grid(GRID_SIZE), menu_frame))
     start_btn.pack(pady=10)
 
     title2 = tk.Label(menu_frame, text="Special run options:", font=("Arial", 18, "bold"), bg="#9BCD9B")
@@ -453,6 +471,13 @@ def initialize_main_screen(grid):
     step_no_label = tk.Label(toolbar, textvariable=gen, font=("Arial", 12), bg="#87CEEB")
     step_no_label.pack(pady=(0, 10))
 
+    black_pr_title_label = tk.Label(toolbar, text="Black square \n percent:", font=("Arial", 12, "bold"),
+                                     bg="#87CEEB")
+    black_pr_title_label.pack(pady=(10, 0))
+
+    black_no_label = tk.Label(toolbar, textvariable=eq, font=("Arial", 12), bg="#87CEEB")
+    black_no_label.pack(pady=(0, 10))
+
 
     next_button = tk.Button(toolbar, text="Next ⏭️",
                             command=lambda: next_gen(grid, canvas, cell_size),
@@ -479,6 +504,7 @@ def initialize_main_screen(grid):
     canvas.pack(side="right", fill="both", expand=True)
 
     draw_grid(canvas, grid, cell_size)
+    update_eq(grid)
 
     root.mainloop()
 
