@@ -471,7 +471,7 @@ def initialize_main_screen(grid):
     step_no_label = tk.Label(toolbar, textvariable=gen, font=("Arial", 12), bg="#87CEEB")
     step_no_label.pack(pady=(0, 10))
 
-    black_pr_title_label = tk.Label(toolbar, text="Black square \n percent:", font=("Arial", 12, "bold"),
+    black_pr_title_label = tk.Label(toolbar, text="Black square \n relation:", font=("Arial", 12, "bold"),
                                      bg="#87CEEB")
     black_pr_title_label.pack(pady=(10, 0))
 
