@@ -506,7 +506,6 @@ def initialize_main_screen(grid):
     draw_grid(canvas, grid, cell_size)
     update_eq(grid)
 
-    root.mainloop()
 
 
 def main():
