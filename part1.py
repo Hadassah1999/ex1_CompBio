@@ -176,16 +176,16 @@ def change_block_b(grid, i, j):
         b4 = 1 - b4
 
         if black == 1:
-            grid[i][j] = b4
-            grid[fixed_i_plus_one][j] = b3
-            grid[i][fixed_j_plus_one] = b2
-            grid[fixed_i_plus_one][fixed_j_plus_one] = b1
-        elif black in (0, 3, 4):
-            grid[i][j] = b1
-            grid[fixed_i_plus_one][j] = b2
-            grid[i][fixed_j_plus_one] = b3
-            grid[fixed_i_plus_one][fixed_j_plus_one] = b4
+            grid[i1][j1] = b4
+            grid[i2][j1] = b3
+            grid[i1][j2] = b2
+            grid[i2][j2] = b1
 
+        elif black in (0, 3, 4):
+            grid[i1][j1] = b1
+            grid[i2][j1] = b2
+            grid[i1][j2] = b3
+            grid[i2][j2] = b4
 
 def red_step(grid):
     """
@@ -303,32 +303,40 @@ def initialize_spaced_spiral_grid(size):
 
 
 def initialize_glider_grid(grid_size):
+    """
+    Initializes the "grid" with scattered gliders in two vertical rows.
+    As generations pass, the gliders would progress to the right side of the grid.
+    """
     grid = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
 
-    # Define the 4x4 "bow and arrow" shape
+    # Glider pattern shape
     pattern = [
+        [0, 0, 0, 0],
         [0, 1, 0, 0],
         [0, 0, 1, 0],
         [0, 0, 1, 0],
-        [0, 1, 0, 0]
+        [0, 1, 0, 0],
+        [0, 0, 0, 0]
     ]
 
-    pattern_height = len(pattern)
-    pattern_width = len(pattern[0])
-    min_gap = 8  # Minimum horizontal gap between patterns
+    pattern_rows = len(pattern)
+    pattern_cols = len(pattern[0])
 
-    # Fixed vertical offset (starting row index)
-    offset_y = 1
 
-    # Iterate horizontally with gap
-    for offset_x in range(0, grid_size - pattern_width + 1, pattern_width + min_gap):
-        for i in range(pattern_height):
-            for j in range(pattern_width):
-                if offset_y + i < grid_size and offset_x + j < grid_size:
-                    grid[offset_y + i][offset_x + j] = pattern[i][j]
+    col_offsets = [0, 50]  
+    num_blocks_vertical = grid_size // pattern_rows
+
+    for k in range(num_blocks_vertical):
+        i = k * pattern_rows  
+        for j_offset in col_offsets:
+            for di in range(pattern_rows):
+                for dj in range(pattern_cols):
+                    ii = i + di
+                    jj = j_offset + dj
+                    if ii < grid_size and jj < grid_size:
+                        grid[ii][jj] = pattern[di][dj]
 
     return grid
-
 
 def draw_grid(canvas, grid, cell_size):
     """
@@ -359,7 +367,9 @@ def return_to_menu(root):
     Returns the user to the menu screen from the grid screen. The current state of the grid is removed,
     so when re-entering the grid screen, it will be re-initialized.
     """
-    global gen
+    global gen, play_pause_btn_text, continue_playing
+    continue_playing = False
+    play_pause_btn_text.set(value="Play 🎵")
     gen.set(1)
     for widget in root.winfo_children():
         widget.destroy()
